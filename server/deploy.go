@@ -25,10 +25,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"k8s.io/klog/v2"
 	"github.com/openconfig/containerz/chunker"
 	"github.com/openconfig/containerz/containers"
 	cpb "github.com/openconfig/gnoi/containerz"
+	"k8s.io/klog/v2"
 )
 
 // pluginLocation is the location where plugins are expected to be written to.
@@ -160,6 +160,11 @@ func (s *Server) handleImageTransfer(ctx context.Context, srv cpb.Containerz_Dep
 				},
 			}); err != nil {
 				return status.Errorf(codes.Unavailable, "client is not ready: %v", err)
+			}
+
+			if err = os.Remove(chunkWriter.File().Name()); err != nil {
+				return fmt.Errorf("failed to remove temporary image file %s with error: %s",
+					chunkWriter.File().Name(), err)
 			}
 
 			return nil
