@@ -39,4 +39,5 @@ var pluginStopCmd = &cobra.Command{
 
 func init() {
 	pluginCmd.AddCommand(pluginStopCmd)
+	pluginStopCmd.PersistentFlags().StringVar(&instance, "instance", "", "plugin instance name")
 }
