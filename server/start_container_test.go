@@ -599,14 +599,13 @@ func TestContainerStart(t *testing.T) {
 			},
 		},
 		{
-			name: "restart-request-for-stopped-container",
+			name: "restart-request-for-stopped-container-image",
 			inReq: &cpb.StartContainerRequest{
 				InstanceName: "restart-me",
 				ImageName:    "xy",
 			},
 			wantErr: status.Errorf(codes.InvalidArgument,
-				"instance %q is stopped. please provide only the instance name to restart it."+
-					` got request=image_name:"xy" instance_name:"restart-me"`,
+				"instance %q is stopped. please provide only the instance name to restart it",
 				"restart-me"),
 			fcm: &fakeContainerManager{
 				listCntMsgs: []*cpb.ListContainerResponse{{

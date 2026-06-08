@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/openconfig/containerz/containers"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
@@ -85,7 +86,7 @@ func (m *Manager) performContainerUpdate(ctx context.Context, instance, image, t
 					" should return status error code, got %s: %s",
 				errPfx, recreateErr)
 		}
-		return "", status.Errorf(s.Code(), fmt.Sprintf("%s; %s", errPfx, recreateErr))
+		return "", status.Errorf(s.Code(), "%s; %s", errPfx, recreateErr)
 	}
 
 	return instance, status.Errorf(codes.Internal, "%s; yet, restoration of previous state succeeded", errPfx)
