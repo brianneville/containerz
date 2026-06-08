@@ -16,11 +16,11 @@ package client
 
 import (
 	"context"
-	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/testing/protocmp"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	cpb "github.com/openconfig/gnoi/containerz"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 type fakeRemovePluginTarServer struct {

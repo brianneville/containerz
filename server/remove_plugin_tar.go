@@ -26,9 +26,7 @@ import (
 )
 
 // RemovePluginTar removes a plugin tar. If the plugin does not exist this operation is a no-op.
-func (s *Server) RemovePluginTar(ctx context.Context,
-	request *cpb.RemovePluginTarRequest) (*cpb.RemovePluginTarResponse, error) {
-
+func (s *Server) RemovePluginTar(ctx context.Context, request *cpb.RemovePluginTarRequest) (*cpb.RemovePluginTarResponse, error) {
 	pluginName := request.GetName()
 	if pluginName == "" {
 		return nil, status.Error(codes.InvalidArgument, "name field must be set")
