@@ -44,8 +44,9 @@ func (s *Server) StartContainer(ctx context.Context, request *cpb.StartContainer
 	switch existingState {
 	case cpb.ListContainerResponse_STOPPED:
 		if !isRestartContainerRequest(request) {
-			return nil, status.Errorf(codes.InvalidArgument, "instance %q is stopped. please provide"+
-				" only the instance name to restart it. got request=%s", instanceName, request)
+			return nil, status.Errorf(codes.InvalidArgument,
+				"instance %q is stopped. please provide only the instance name to restart it",
+				instanceName)
 		}
 		if err = s.mgr.ContainerRestart(ctx, instanceName); err != nil {
 			return nil, err
