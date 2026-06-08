@@ -51,7 +51,7 @@ var pluginStartCmd = &cobra.Command{
 
 func init() {
 	pluginCmd.AddCommand(pluginStartCmd)
-
+	pluginStartCmd.PersistentFlags().StringVar(&instance, "instance", "", "plugin instance name")
 	pluginStartCmd.PersistentFlags().StringVar(&name, "name", "", "plugin name")
 	pluginStartCmd.PersistentFlags().StringVar(&configFile, "config", "", "plugin config file")
 }
