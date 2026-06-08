@@ -10,7 +10,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
-	"github.com/openconfig/containerz/containers"
+	options "github.com/openconfig/containerz/containers"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -74,8 +74,7 @@ func (m *Manager) performContainerUpdate(ctx context.Context, instance, image, t
 	}
 
 	// There was some error, let's try to restore previous state.
-	errPfx := fmt.Sprintf("failed to update instance %s due to:"+
-		" restoration of previous state %v", instance, err)
+	errPfx := fmt.Sprintf("failed to update instance %s due to: %v", instance, err)
 
 	if recreateErr := m.restartContainer(ctx, oldCntJSON,
 		false); recreateErr != nil {
@@ -86,7 +85,7 @@ func (m *Manager) performContainerUpdate(ctx context.Context, instance, image, t
 					" should return status error code, got %s: %s",
 				errPfx, recreateErr)
 		}
-		return "", status.Errorf(s.Code(), "%s; %s", errPfx, recreateErr)
+		return "", status.Errorf(s.Code(), "%s; restoration of previous state %s", errPfx, recreateErr)
 	}
 
 	return instance, status.Errorf(codes.Internal, "%s; yet, restoration of previous state succeeded", errPfx)
