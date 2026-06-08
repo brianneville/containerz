@@ -102,6 +102,12 @@ func (f *fakeContainerManager) ContainerRemove(_ context.Context, instance strin
 	return fmt.Errorf("not found")
 }
 
+func (f *fakeContainerManager) ContainerRestart(_ context.Context,
+	instance string, opts ...options.Option) error {
+	f.Instance = instance
+	return nil
+}
+
 func (f *fakeContainerManager) ContainerStart(_ context.Context, image string, tag string, cmd string, opts ...options.Option) (string, error) {
 	optionz := options.ApplyOptions(opts...)
 	f.Image = image
@@ -188,7 +194,7 @@ func (f *fakeContainerManager) ImageList(ctx context.Context, all bool, limit in
 	return nil
 }
 
-func (f fakeContainerManager) ImageRemove(context.Context, string, string, ...options.Option) error {
+func (f *fakeContainerManager) ImageRemove(context.Context, string, string, ...options.Option) error {
 	return f.removeError
 }
 

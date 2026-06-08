@@ -81,6 +81,14 @@ type containerManager interface {
 	// started container.
 	ContainerStart(context.Context, string, string, string, ...options.Option) (string, error)
 
+	// ContainerRestart restarts a stopped container
+	//
+	// It takes:
+	// - instance (string): the instance name of the existing exited container to restart
+	//
+	// It returns an error indicating if the start operation succeeded
+	ContainerRestart(context.Context, string, ...options.Option) error
+
 	// ContainerStop stops a container. If the Force option is passed it will forcefully stop
 	// (kill) the container. A stop timeout can be provided via the context otherwise the
 	// system default will be used.
@@ -91,7 +99,7 @@ type containerManager interface {
 	// It returns an error indicating whether the result was successful
 	ContainerStop(context.Context, string, ...options.Option) error
 
-	// ContainerUpdates updates an existing container.
+	// ContainerUpdate updates an existing container.
 	//
 	// It takes:
 	// - instance (string): the instance name of the running container.

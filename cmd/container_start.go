@@ -40,10 +40,10 @@ var (
 
 var cntStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "start a container wirth the specified image and tag",
+	Short: "start a container with the specified image and tag, or restart an exited container",
 	RunE: func(command *cobra.Command, args []string) error {
-		if image == "" {
-			return fmt.Errorf("--image must be specified")
+		if instance == "" {
+			return fmt.Errorf("--instance must be specified")
 		}
 
 		opts := []client.StartOption{}
@@ -103,7 +103,7 @@ func init() {
 	containerCmd.AddCommand(cntStartCmd)
 
 	cntStartCmd.PersistentFlags().StringVar(&cntCommand, "command", "/bin/bash", "command to run.")
-	cntStartCmd.PersistentFlags().StringVar(&instance, "instance", "", "Name to give to the container.")
+	cntStartCmd.PersistentFlags().StringVar(&instance, "instance", "", "Name to give to the container (or name of exited container to restart).")
 	cntStartCmd.PersistentFlags().StringVar(&network, "network", "", "Network to attach container to.")
 	cntStartCmd.PersistentFlags().StringVar(&runAs, "runas", "", "User to use (format: <user>[:<group>]")
 	cntStartCmd.PersistentFlags().StringVar(&restartPolicy, "restart_policy", "", "Restart policy to use. "+

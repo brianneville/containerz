@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types"
+	"github.com/openconfig/containerz/containers"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
-	"github.com/openconfig/containerz/containers"
 )
 
 type instanceConfig struct {
@@ -73,18 +73,49 @@ func (m *Manager) performContainerUpdate(ctx context.Context, instance, image, t
 	}
 
 	// There was some error, let's try to restore previous state.
-	errPfx := fmt.Sprintf("failed to update instance %s due to: %v", instance, err)
+	errPfx := fmt.Sprintf("failed to update instance %s due to:"+
+		" restoration of previous state %v", instance, err)
 
-	resp, err := m.client.ContainerCreate(ctx, oldCntJSON.Config, oldCntJSON.HostConfig, &network.NetworkingConfig{}, nil, instance)
-	if err != nil {
-		return "", status.Errorf(codes.Internal, "%s; restoration of previous state failed when creating container: %v", errPfx, err)
-	}
-
-	if err := m.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return "", status.Errorf(codes.Internal, "%s; restoration of previous state failed when starting container: %v", errPfx, err)
+	if recreateErr := m.restartContainer(ctx, oldCntJSON,
+		false); recreateErr != nil {
+		s, ok := status.FromError(recreateErr)
+		if !ok {
+			return "", fmt.Errorf(
+				"programming error: restartContainer"+
+					" should return status error code, got %s: %s",
+				errPfx, recreateErr)
+		}
+		return "", status.Errorf(s.Code(), fmt.Sprintf("%s; %s", errPfx, recreateErr))
 	}
 
 	return instance, status.Errorf(codes.Internal, "%s; yet, restoration of previous state succeeded", errPfx)
+}
+
+// restartContainer recreates a container given a particular config.
+// it is expected that the container in question has been stopped by the point this is called.
+func (m *Manager) restartContainer(ctx context.Context, oldCntJSON types.ContainerJSON,
+	needsRemoval bool) error {
+	instanceName := strings.Replace(oldCntJSON.Name, "/", "", 1)
+	if needsRemoval {
+		if err := m.client.ContainerRemove(ctx, instanceName,
+			container.RemoveOptions{}); err != nil {
+			return status.Errorf(codes.Internal,
+				"failed when removing container: %v", err)
+		}
+	}
+	resp, err := m.client.ContainerCreate(ctx,
+		oldCntJSON.Config, oldCntJSON.HostConfig, &network.NetworkingConfig{},
+		nil, instanceName)
+	if err != nil {
+		return status.Errorf(codes.Internal,
+			"failed when creating container: %v", err)
+	}
+
+	if err := m.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+		return status.Errorf(codes.Internal,
+			"failed when starting container: %v", err)
+	}
+	return nil
 }
 
 func (m *Manager) performContainerUpdatePrechecks(ctx context.Context, instance, imageName, tag, cmd string, async bool, opts ...options.Option) ([]types.Container, error) {
