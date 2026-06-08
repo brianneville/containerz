@@ -90,6 +90,7 @@ func startContainerRequestWithOptions(ctx context.Context, image string, tag str
 	if err != nil {
 		return nil, err
 	}
+	limits := limits(optionz.cpus, optionz.softMem, optionz.hardMem)
 
 	return &cpb.StartContainerRequest{
 		ImageName:    image,
@@ -105,12 +106,19 @@ func startContainerRequestWithOptions(ctx context.Context, image string, tag str
 		RunAs:        runAs,
 		Restart:      restartPolicy,
 		Labels:       optionz.labels,
-		Limits: &cpb.StartContainerRequest_Limits{
-			MaxCpu:       optionz.cpus,
-			SoftMemBytes: optionz.softMem,
-			HardMemBytes: optionz.hardMem,
-		},
+		Limits:       limits,
 	}, nil
+}
+
+func limits(cpus float64, softMem, hardMem int64) *cpb.StartContainerRequest_Limits {
+	if cpus == 0 && softMem == 0 && hardMem == 0 {
+		return nil
+	}
+	return &cpb.StartContainerRequest_Limits{
+		MaxCpu:       cpus,
+		SoftMemBytes: softMem,
+		HardMemBytes: hardMem,
+	}
 }
 
 func ports(ports []string) ([]*cpb.StartContainerRequest_Port, error) {
@@ -231,6 +239,9 @@ func restart(policy string) (*cpb.StartContainerRequest_Restart, error) {
 }
 
 func capabilities(capAdd, capRemove []string) (*cpb.StartContainerRequest_Capabilities, error) {
+	if len(capAdd) == 0 && len(capRemove) == 0 {
+		return nil, nil
+	}
 	return &cpb.StartContainerRequest_Capabilities{
 		Add:    capAdd,
 		Remove: capRemove,

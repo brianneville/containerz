@@ -434,6 +434,21 @@ func TestStart(t *testing.T) {
 			},
 			wantErr: status.Error(codes.FailedPrecondition, "restart policy `my-policy` is none of always, on-failure, unless-stopped, none"),
 		},
+		{
+			name:       "restart-instance",
+			inInstance: "some-instance",
+			inMsg: &cpb.StartContainerResponse{
+				Response: &cpb.StartContainerResponse_StartOk{
+					StartOk: &cpb.StartOK{
+						InstanceName: "some-instance",
+					},
+				},
+			},
+			wantID: "some-instance",
+			wantMsg: &cpb.StartContainerRequest{
+				InstanceName: "some-instance",
+			},
+		},
 	}
 
 	ctx := context.Background()

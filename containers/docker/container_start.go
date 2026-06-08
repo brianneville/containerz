@@ -19,6 +19,24 @@ import (
 	cpb "github.com/openconfig/gnoi/containerz"
 )
 
+func (m *Manager) ContainerRestart(ctx context.Context, instance string, _ ...options.Option) error {
+	cnts, err := m.client.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		return err
+	}
+	j, err := m.jsonState(ctx, instance, cnts)
+	if err != nil {
+		return err
+	}
+	if j.State.Status != container.StateExited {
+		// when we're calling ContainerRestart we expect that the container is currently exited,
+		// but its possible that the container has now restarted, and so we should just error here
+		return status.Errorf(codes.Aborted, "expected container state to be %q, got %q",
+			container.StateExited, j.State.Status)
+	}
+	return m.restartContainer(ctx, j, true)
+}
+
 // ContainerStart starts a container provided the image exists and that the ports requested are not
 // currently in use.
 func (m *Manager) ContainerStart(ctx context.Context, imageName, tag, cmd string, opts ...options.Option) (string, error) {
