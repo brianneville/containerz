@@ -37,6 +37,7 @@ func TestContainerStart(t *testing.T) {
 		wantResp  *cpb.StartContainerResponse
 		wantState *fakeContainerManager
 		wantErr   error
+		fcm       *fakeContainerManager
 	}{
 		{
 			name: "simple",
@@ -117,6 +118,8 @@ func TestContainerStart(t *testing.T) {
 				},
 			},
 			wantState: &fakeContainerManager{
+				All:   true,
+				Limit: 1,
 				Labels: map[string]string{
 					locationLabel: cpb.StartContainerRequest_L_PRIMARY.String()},
 				Image:    "some-image",
@@ -573,12 +576,188 @@ func TestContainerStart(t *testing.T) {
 				Cmd:   "some-cmd",
 			},
 		},
+		{
+			// this restart request will fail, and become just a normal StartContainer request,
+			// but with no image,cmds,config etc.
+			// in reality this will lead to an error on the non-mocked mgr
+			name: "restart-request-non-existing-container",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me",
+			},
+			wantResp: &cpb.StartContainerResponse{
+				Response: &cpb.StartContainerResponse_StartOk{
+					StartOk: &cpb.StartOK{},
+				},
+			},
+			wantState: &fakeContainerManager{
+				All:      true,
+				Limit:    1,
+				Instance: "restart-me",
+				Labels: map[string]string{
+					locationLabel: cpb.StartContainerRequest_L_PRIMARY.String(),
+				},
+			},
+		},
+		{
+			name: "restart-request-for-stopped-container-image",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me",
+				ImageName:    "xy",
+			},
+			wantErr: status.Errorf(codes.InvalidArgument,
+				"instance %q is stopped. please provide only the instance name to restart it",
+				"restart-me"),
+			fcm: &fakeContainerManager{
+				listCntMsgs: []*cpb.ListContainerResponse{{
+					Name:   "/restart-me",
+					Status: cpb.ListContainerResponse_STOPPED,
+				}},
+			},
+			wantState: &fakeContainerManager{
+				All:   true,
+				Limit: 1,
+			},
+		},
+		{
+			name: "restart-request-for-stopped-container",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me",
+			},
+			wantResp: &cpb.StartContainerResponse{
+				Response: &cpb.StartContainerResponse_StartOk{
+					StartOk: &cpb.StartOK{
+						InstanceName: "restart-me",
+					},
+				},
+			},
+			fcm: &fakeContainerManager{
+				listCntMsgs: []*cpb.ListContainerResponse{{
+					Name:   "/restart-me",
+					Status: cpb.ListContainerResponse_STOPPED,
+				}},
+			},
+			wantState: &fakeContainerManager{
+				All:      true,
+				Limit:    1,
+				Instance: "restart-me",
+			},
+		},
+		{
+			name: "restart-request-for-specific-stopped-container",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me-specific",
+			},
+			wantResp: &cpb.StartContainerResponse{
+				Response: &cpb.StartContainerResponse_StartOk{
+					StartOk: &cpb.StartOK{
+						InstanceName: "restart-me-specific",
+					},
+				},
+			},
+			fcm: &fakeContainerManager{
+				listCntMsgs: []*cpb.ListContainerResponse{{
+					Name:   "/restart-me-specific-something-else",
+					Status: cpb.ListContainerResponse_STOPPED,
+				}, {
+					Name:   "/restart-me-specific",
+					Status: cpb.ListContainerResponse_STOPPED,
+				}},
+			},
+			wantState: &fakeContainerManager{
+				All:      true,
+				Limit:    1,
+				Instance: "restart-me-specific",
+			},
+		},
+		{
+			name: "restart-request-for-running-container",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me-running",
+			},
+			wantErr: status.Errorf(codes.AlreadyExists,
+				"instance name restart-me-running already in use"),
+			fcm: &fakeContainerManager{
+				listCntMsgs: []*cpb.ListContainerResponse{{
+					Name:   "/restart-me-running",
+					Status: cpb.ListContainerResponse_RUNNING,
+				}},
+			},
+			wantState: &fakeContainerManager{
+				All:   true,
+				Limit: 1,
+			},
+		},
+		{
+			name: "restart-request-for-present-container",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me-present",
+			},
+			wantErr: status.Errorf(codes.AlreadyExists,
+				"instance name restart-me-present already in use"),
+			fcm: &fakeContainerManager{
+				listCntMsgs: []*cpb.ListContainerResponse{{
+					Name:   "/restart-me-present",
+					Status: cpb.ListContainerResponse_PRESENT,
+				}},
+			},
+			wantState: &fakeContainerManager{
+				All:   true,
+				Limit: 1,
+			},
+		},
+		{
+			name: "restart-request-for-not-found-no-containers",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me-not-found-in-list",
+			},
+			fcm: &fakeContainerManager{
+				listCntMsgs: []*cpb.ListContainerResponse{},
+			},
+			wantResp: &cpb.StartContainerResponse{
+				Response: &cpb.StartContainerResponse_StartOk{
+					StartOk: &cpb.StartOK{},
+				},
+			},
+			wantState: &fakeContainerManager{
+				All:      true,
+				Limit:    1,
+				Instance: "restart-me-not-found-in-list",
+				Labels: map[string]string{
+					locationLabel: cpb.StartContainerRequest_L_PRIMARY.String()},
+			},
+		},
+		{
+			name: "restart-request-for-not-found-non-empty",
+			inReq: &cpb.StartContainerRequest{
+				InstanceName: "restart-me-not-found-in-list",
+			},
+			fcm: &fakeContainerManager{
+				listCntMsgs: []*cpb.ListContainerResponse{{
+					Name: "/other-things",
+				}},
+			},
+			wantResp: &cpb.StartContainerResponse{
+				Response: &cpb.StartContainerResponse_StartOk{
+					StartOk: &cpb.StartOK{},
+				},
+			},
+			wantState: &fakeContainerManager{
+				All:      true,
+				Limit:    1,
+				Instance: "restart-me-not-found-in-list",
+				Labels: map[string]string{
+					locationLabel: cpb.StartContainerRequest_L_PRIMARY.String()},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
 			fake := &fakeContainerManager{}
+			if tc.fcm != nil {
+				fake = tc.fcm
+			}
 			tc.inOpts = append(tc.inOpts, WithAddr("localhost:0"))
 			cli, s := startServerAndReturnClient(ctx, t, fake, tc.inOpts)
 			defer s.Halt(ctx)

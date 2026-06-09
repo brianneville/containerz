@@ -111,6 +111,9 @@ type options struct {
 	// All indicates that we should return all containers regardless of their state.
 	All bool
 
+	// ListAll indicates we should list all containers when searching for stopped containers
+	ListAll bool
+
 	// Limit restricts the total number of responses.
 	Limit int
 
@@ -158,6 +161,14 @@ type options struct {
 
 	// Devices is the set of devices to attach to the container.
 	Devices []*cpb.Device
+}
+
+// WithListAll causes list operations to return all containers
+// Supported by: StartContainer
+func WithListAll() Option {
+	return func(p *options) {
+		p.ListAll = true
+	}
 }
 
 // WithTarget sets the target image name and tag option for this pull operation.
