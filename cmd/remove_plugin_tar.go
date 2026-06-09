@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,15 +20,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var pluginRemoveCmd = &cobra.Command{
-	Use:   "remove",
-	Short: "Removes a plugin by instance name",
+var pluginName string
+
+var pluginRemoveTarCmd = &cobra.Command{
+	Use:   "remove-tar",
+	Short: "Removes a plugin tar by deployed name",
 	RunE: func(command *cobra.Command, args []string) error {
-		if instance == "" {
-			fmt.Println("--instance must be provided")
+		if pluginName == "" {
+			fmt.Println("--name must be provided")
 		}
 
-		if err := containerzClient.RemovePlugin(command.Context(), instance); err != nil {
+		if err := containerzClient.RemovePluginTar(command.Context(), pluginName); err != nil {
 			return err
 		}
 
@@ -38,6 +40,7 @@ var pluginRemoveCmd = &cobra.Command{
 }
 
 func init() {
-	pluginCmd.AddCommand(pluginRemoveCmd)
-	pluginRemoveCmd.PersistentFlags().StringVar(&instance, "instance", "", "plugin instance name")
+	pluginCmd.AddCommand(pluginRemoveTarCmd)
+	pluginRemoveTarCmd.PersistentFlags().StringVar(&pluginName,
+		"name", "", "plugin tarball name (as used in Deploy RPC)")
 }

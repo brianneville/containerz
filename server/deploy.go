@@ -27,10 +27,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"k8s.io/klog/v2"
 	"github.com/openconfig/containerz/chunker"
 	"github.com/openconfig/containerz/containers"
 	cpb "github.com/openconfig/gnoi/containerz"
+	"k8s.io/klog/v2"
 )
 
 // tmpFilePrefix is a prefix used in the naming of temp files written by moveFile
@@ -143,7 +143,7 @@ func (s *Server) handleImageTransfer(ctx context.Context, srv cpb.Containerz_Dep
 					"no content was transferred over this stream")
 			}
 			if transfer.IsPlugin {
-				if err := moveFile(chunkWriter, filepath.Join(pluginLocation, fmt.Sprintf("%s.tar", transfer.GetName()))); err != nil {
+				if err := moveFile(chunkWriter, genPluginPath(transfer.GetName())); err != nil {
 					return status.Errorf(codes.Internal, "unable to move plugin: %v", err)
 				}
 
@@ -182,6 +182,10 @@ func (s *Server) handleImageTransfer(ctx context.Context, srv cpb.Containerz_Dep
 			return status.Errorf(codes.Internal, "unexpected message type %T", msg.GetRequest())
 		}
 	}
+}
+
+func genPluginPath(name string) string {
+	return filepath.Join(pluginLocation, fmt.Sprintf("%s.tar", name))
 }
 
 func checkDiskSpace(loc string, bytesNeeded uint64) error {
