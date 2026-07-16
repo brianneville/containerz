@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/pkg/archive"
+	"github.com/moby/go-archive"
 
 	"github.com/docker/docker/api/types"
 )
